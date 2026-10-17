@@ -1124,6 +1124,29 @@ class TestLUT3x1D:
         except NotImplementedError:  # pragma: no cover
             pass
 
+    @pytest.mark.parametrize("size", [(5, 3, 2), (2, 7, 4), (4, 2, 9), (5, 5, 5)])
+    def test_invert_explicit_domain(self, size: tuple[int, int, int]) -> None:
+        """Test inversion preserves explicit domains with padded channels."""
+
+        domain = LUT3x1D.linear_table(size)
+        LUT = LUT3x1D(domain**2, domain=domain)
+        LUT_i = LUT.invert()
+
+        xp_assert_equal(LUT_i.table, domain)
+        xp_assert_equal(LUT_i.domain, LUT.table)
+        xp_assert_equal(LUT_i.invert().table, LUT.table)
+        xp_assert_equal(LUT_i.invert().domain, domain)
+        assert not np.shares_memory(LUT_i.table, LUT.domain)
+
+        RGB = np.array([[0.1, 0.2, 0.3], [0.5, 0.6, 0.7]])
+        RGB_t = LUT.apply(RGB)
+        xp_assert_close(LUT_i.apply(RGB_t), RGB, atol=TOLERANCE_ABSOLUTE_TESTS)
+        xp_assert_close(
+            LUT.apply(RGB_t, direction="Inverse"),
+            RGB,
+            atol=TOLERANCE_ABSOLUTE_TESTS,
+        )
+
     def test_apply(self) -> None:
         """
         Test :class:`colour.io.luts.lut.LUT3x1D.apply` method.

@@ -1497,20 +1497,18 @@ class LUT3x1D(AbstractLUT):
          [0.7777777... 0.7777777... 0.7777777...]
          [0.8888888... 0.8888888... 0.8888888...]
          [1.       ... 1.       ... 1.       ...]]
+
+        Inverting a *LUT* with different sample counts for each channel:
+
+        >>> domain = LUT3x1D.linear_table([5, 3, 2])
+        >>> LUT = LUT3x1D(domain**2, domain=domain)
+        >>> RGB = np.array([0.1, 0.2, 0.3])
+        >>> LUT.invert().apply(LUT.apply(RGB))
+        array([0.1, 0.2, 0.3])
         """
 
-        size = self.table.shape[0]
-        if self.is_domain_explicit():
-            domain = [
-                axes[: (~np.isnan(axes)).cumsum().argmax() + 1]
-                for axes in np.transpose(self.domain)
-            ]
-        else:
-            domain_min, domain_max = self.domain
-            domain = [np.linspace(domain_min[i], domain_max[i], size) for i in range(3)]
-
         return LUT3x1D(
-            table=tstack(domain),
+            table=self.linear_table(self.table.shape[0], self.domain).copy(),
             name=f"{self.name} - Inverse",
             domain=self.table,
         )
