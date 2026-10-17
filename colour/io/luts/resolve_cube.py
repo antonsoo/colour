@@ -339,7 +339,7 @@ def write_LUT_ResolveCube(
         )
 
         if isinstance(LUT[0], LUT1D):
-            LUT[0] = LUT[0].convert(LUT3x1D)
+            LUT = LUTSequence(LUT[0].convert(LUT3x1D), LUT[1])
 
         name = f"{LUT[0].name} - {LUT[1].name}"
         has_3x1D = True

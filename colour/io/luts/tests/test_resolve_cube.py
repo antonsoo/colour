@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 
+import numpy as np
 import pytest
 
 from colour.constants import TOLERANCE_ABSOLUTE_TESTS
@@ -270,6 +271,30 @@ class TestWriteLUTResolveCube:
         )
 
         assert LUT_5_r == LUT_5_t
+
+    @pytest.mark.parametrize("explicit_domain", [False, True])
+    def test_write_preserves_sequence(self, explicit_domain: bool) -> None:
+        """Test exporting a 1D shaper preserves the original LUT sequence."""
+
+        samples = np.linspace(0, 1, 5)
+        shaper = LUT1D(0.1 + 0.8 * samples, domain=samples if explicit_domain else None)
+        cube = LUT3D(size=3)
+        sequence = LUTSequence(shaper, cube)
+        RGB = np.array([0.25, 0.5, 0.75])
+        expected = np.array([0.1875, 0.5, 0.8125])
+        path = os.path.join(self._temporary_directory, "sequence.cube")
+
+        if explicit_domain:
+            with pytest.raises(AssertionError, match="domain must be implicit"):
+                write_LUT_ResolveCube(sequence, path)
+        else:
+            write_LUT_ResolveCube(sequence, path)
+            decoded = read_LUT_ResolveCube(path)
+            xp_assert_close(decoded.apply(RGB), 0.1 + 0.8 * RGB)
+
+        assert sequence[0] is shaper
+        assert sequence[1] is cube
+        xp_assert_close(sequence.apply(RGB, LUT1D={"direction": "Inverse"}), expected)
 
     def test_raise_exception_write_LUT_ResolveCube(self) -> None:
         """
